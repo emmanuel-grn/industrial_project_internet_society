@@ -1,0 +1,126 @@
+# ============================================================================
+# Query Configuration - Secure Internet Servers
+# Pillar: Security / Security Threat / Secure Internet Servers
+# ============================================================================
+
+queries:
+  "1.cypher":
+    description: "RPKI coverage rate of prefixes hosting servers in a country"
+    
+    template: |
+      Title: RPKI Coverage for Server Prefixes in {{ params.countryCode | upper }}
+      
+      This analysis calculates the percentage of BGP prefixes hosting servers in the country that are covered by RPKI (Resource Public Key Infrastructure). RPKI coverage ensures routing security and reduces the risk of route hijacking for server prefixes.
+      
+      {% if results %}
+      **Analysis Results:**
+      
+      | Country | Total Prefixes | Covered Prefixes | RPKI Coverage (%) |
+      |---------|----------------|------------------|-------------------|
+      {% for row in results %}
+      | {{ row.country }} | {{ row.totalPrefixes }} | {{ row.coveredPrefixes }} | {{ "%.2f"|format(row.rpkiCoveragePercentage) }} |
+      {% endfor %}
+      
+      **Interpretation:**
+      
+      A higher RPKI coverage percentage indicates better routing security for server prefixes in the country. Countries with low RPKI coverage may be more vulnerable to routing attacks targeting server infrastructure.
+      
+      {% else %}
+      No RPKI coverage data available for this country.
+      {% endif %}
+    
+    fields:
+      country:
+        type: "string"
+        label: "Country Name"
+      totalPrefixes:
+        type: "integer"
+        label: "Total Prefixes"
+      coveredPrefixes:
+        type: "integer"
+        label: "Covered Prefixes"
+      rpkiCoveragePercentage:
+        type: "float"
+        label: "RPKI Coverage (%)"
+        format: "float_2"
+    
+    sort_by: "rpkiCoveragePercentage"
+    sort_order: "desc"
+
+  "2.cypher":
+    description: "DNS infrastructure density — HostName nodes and hosting operators in a country"
+    
+    template: |
+      Title: Internet Server Infrastructure Density for {{ params.countryCode | upper }}
+      
+      This analysis measures the density of internet server infrastructure in the country by counting the number of distinct HostName nodes resolved to IPs within the country's BGP prefixes, and the number of distinct operators (Autonomous Systems) hosting them. This provides an approximation of the "Secure Internet Servers" indicator using the IYP graph topology.
+      
+      {% if results %}
+      **Analysis Results:**
+      
+      | Country | DNS Infrastructure Nodes | Hosting Operators (ASes) |
+      |---------|--------------------------|--------------------------|
+      {% for row in results %}
+      | {{ row.country }} | {{ row.dnsInfrastructureNodes }} | {{ row.numberOfHostingOperators }} |
+      {% endfor %}
+      
+      **Interpretation:**
+      
+      A higher number of infrastructure nodes spread across many hosting operators indicates a resilient, distributed server ecosystem. Countries where most nodes are concentrated in a single operator face a single-point-of-failure risk. This metric complements the official "Secure Internet Servers per million inhabitants" score from the World Bank.
+      
+      {% else %}
+      No DNS infrastructure data available for this country.
+      {% endif %}
+    
+    fields:
+      country:
+        type: "string"
+        label: "Country Name"
+      dnsInfrastructureNodes:
+        type: "integer"
+        label: "DNS Infrastructure Nodes (HostNames)"
+      numberOfHostingOperators:
+        type: "integer"
+        label: "Number of Hosting Operators (ASes)"
+    
+    sort_by: "dnsInfrastructureNodes"
+    sort_order: "desc"
+
+  "3.cypher":
+    description: "Diversity of operators (AS) hosting servers in a country"
+    
+    template: |
+      Title: Diversity of Server Hosting Operators in {{ params.countryCode | upper }}
+      
+      This analysis identifies the diversity of Autonomous Systems (ASes) hosting servers in the country. A higher diversity of operators indicates better resilience and reduced dependency on a few providers.
+      
+      {% if results %}
+      **Analysis Results:**
+      
+      | Country | Number of Servers | Number of AS Operators |
+      |---------|-------------------|------------------------|
+      {% for row in results %}
+      | {{ row.country }} | {{ row.numberOfServers }} | {{ row.numberOfASOperators }} |
+      {% endfor %}
+      
+      **Interpretation:**
+      
+      A higher number of AS operators hosting servers indicates a more distributed and resilient server infrastructure. Countries with fewer operators may face risks of centralization and reduced redundancy.
+      
+      {% else %}
+      No server hosting operator data available for this country.
+      {% endif %}
+    
+    fields:
+      country:
+        type: "string"
+        label: "Country Name"
+      numberOfServers:
+        type: "integer"
+        label: "Number of Servers"
+      numberOfASOperators:
+        type: "integer"
+        label: "Number of AS Operators"
+    
+    sort_by: "numberOfASOperators"
+    sort_order: "desc"
