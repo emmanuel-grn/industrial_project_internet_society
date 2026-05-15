@@ -1,0 +1,102 @@
+# ============================================================================
+# Query Configuration - UPSTREAM TRANSIT DIVERSITY
+# Pillar: Market Readiness
+# ============================================================================
+
+queries:
+  # --------------------------------------------------------------------------
+  # Query 1: Identification of Upstream Transit Providers (by Customer Count)
+  # --------------------------------------------------------------------------
+  "1.cypher":
+    description: "Ranking of external transit providers based on the number of local customer networks they serve"
+    
+    # Jinja2 Template for LLM context generation (English)
+    template: |
+      Title: Upstream Transit Provider Landscape for {{ params.countryCode | upper }}
+      
+      This analysis identifies international Autonomous Systems (AS) that provide internet transit to local networks within the country. It ranks them by the number of local "customer" networks they serve. A high concentration of local networks relying on a single external provider indicates a potential Single Point of Failure (SPOF).
+      
+      {% if results %}
+      **Top Transit Providers by Local Customer Count:**
+      
+      {% for provider in results %}
+      - **Rank {{ loop.index }}:** {{ provider.providerName }} (AS{{ provider.providerASN }})
+        Local Customer Networks: **{{ provider.localCustomers }}**
+      {% endfor %}
+      
+      {% if results|length > max_display %}
+      _({{ results|length - max_display }} other provider(s) omitted from this view)_
+      {% endif %}
+      
+      {% else %}
+      No external upstream transit providers identified for this country based on current BGP topology.
+      {% endif %}
+
+    # Metadata for automatic formatting
+    fields:
+      providerASN:
+        type: "integer"
+        label: "Provider ASN"
+      providerName:
+        type: "string"
+        label: "Provider Name"
+      localCustomers:
+        type: "integer"
+        label: "Local Customers"
+        format: "number"
+
+    # Display Configuration
+    max_display: 10
+    sort_by: "localCustomers"
+    sort_order: "desc"
+
+  # --------------------------------------------------------------------------
+  # Query 2: Dependency Strength Analysis (Hegemony)
+  # --------------------------------------------------------------------------
+  "2.cypher":
+    description: "Analysis of the intensity of dependence on upstream providers using Hegemony scores"
+    
+    # Jinja2 Template for LLM context generation (English)
+    template: |
+      Title: Critical Upstream Dependency (Hegemony) for {{ params.countryCode | upper }}
+      
+      While the previous analysis counted connections, this metric quantifies the *criticality* of those connections using the "Hegemony" score (0 to 1). A high hegemony score indicates that a provider is unavoidable for the networks that depend on it. High scores here suggest deep structural dependencies and significant resilience risks.
+      
+      {% if results %}
+      **Top Critical Dependencies (by Average Hegemony):**
+      
+      {% for provider in results %}
+      - **Rank {{ loop.index }}:** {{ provider.providerName }} (AS{{ provider.providerASN }})
+        Average Hegemony Score: **{{ "%.3f"|format(provider.averageHegemony) }}**
+        (Affecting {{ provider.dependentASNs }} local networks)
+      {% endfor %}
+      
+      {% if results|length > max_display %}
+      _({{ results|length - max_display }} other provider(s) omitted from this view)_
+      {% endif %}
+      
+      {% else %}
+      No significant critical dependencies (Hegemony > 0.1) detected for external providers.
+      {% endif %}
+
+    # Metadata for automatic formatting
+    fields:
+      providerASN:
+        type: "integer"
+        label: "Provider ASN"
+      providerName:
+        type: "string"
+        label: "Provider Name"
+      averageHegemony:
+        type: "float"
+        label: "Avg Hegemony"
+        format: "float_3"
+      dependentASNs:
+        type: "integer"
+        label: "Dependent Networks"
+        format: "number"
+
+    # Display Configuration
+    max_display: 10
+    sort_by: "averageHegemony"
+    sort_order: "desc"

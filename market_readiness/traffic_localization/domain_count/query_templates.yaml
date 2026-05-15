@@ -1,0 +1,93 @@
+# ============================================================================
+# Query Configuration - DOMAIN REGISTRATION (ccTLD)
+# Pillar: Market Readiness
+# ============================================================================
+
+queries:
+  # --------------------------------------------------------------------------
+  # Query 1: Popularity of ccTLD Domains (Local Consumption)
+  # --------------------------------------------------------------------------
+  "1.cypher":
+    description: "List of local ccTLD domains ranked by their query volume from within the country"
+    
+    # Jinja2 Template for LLM context generation (English)
+    template: |
+      Title: Popularity of Local Domains (ccTLD) in {{ params.countryCode | upper }}
+      
+      This analysis verifies if locally registered domains (e.g., .sn, .jp) are actually consumed by local users. It measures the percentage of DNS queries originating from the country that target these specific domains. High usage suggests a relevant local content ecosystem, whereas low usage implies users primarily consume foreign content.
+      
+      {% if results %}
+      **Most Queried Local Domains:**
+      
+      {% for item in results %}
+      - **Rank {{ loop.index }}:** {{ item.localDomain }}
+        Share of Local Queries: **{{ "%.4f"|format(item.percentageOfQueriesInCountry * 100) }}%**
+      {% endfor %}
+      
+      {% if results|length > max_display %}
+      _({{ results|length - max_display }} other domain(s) omitted from this view)_
+      {% endif %}
+      
+      {% else %}
+      No query data available for local ccTLD domains in this country.
+      {% endif %}
+
+    # Metadata for automatic formatting
+    fields:
+      localDomain:
+        type: "string"
+        label: "Domain Name"
+      percentageOfQueriesInCountry:
+        type: "float"
+        label: "Query Share"
+        format: "percentage"
+
+    # Display Configuration
+    max_display: 20
+    sort_by: "percentageOfQueriesInCountry"
+    sort_order: "desc"
+
+  # --------------------------------------------------------------------------
+  # Query 2: Hosting Location of Popular ccTLD Domains
+  # --------------------------------------------------------------------------
+  "2.cypher":
+    description: "Geographic distribution of hosting locations for the top 100 popular ccTLD domains"
+    
+    # Jinja2 Template for LLM context generation (English)
+    template: |
+      Title: Hosting Locations of Top Local Domains for {{ params.countryCode | upper }}
+      
+      This metric analyzes where the top 100 most popular local domains (ccTLD) are physically hosted.
+      - **Local Hosting:** Desirable for data sovereignty, lower latency, and reduced reliance on international transit.
+      - **Foreign Hosting:** Indicates "content leakage," where local traffic must traverse international links to access local content.
+      
+      {% if results %}
+      **Hosting Distribution (by Country):**
+      
+      {% for item in results %}
+      - **{{ item.hostingCountryCode }}**: {{ item.domainCount }} domain(s)
+        {% if item.hostingCountryCode == params.countryCode | upper %}
+        *(LOCAL HOSTING - Good for resilience)*
+        {% else %}
+        *(Foreign Hosting)*
+        {% endif %}
+      {% endfor %}
+      
+      {% else %}
+      Could not determine hosting locations for the top ccTLD domains.
+      {% endif %}
+
+    # Metadata for automatic formatting
+    fields:
+      hostingCountryCode:
+        type: "string"
+        label: "Hosting Country"
+      domainCount:
+        type: "integer"
+        label: "Number of Domains"
+        format: "number"
+
+    # Display Configuration
+    max_display: 15
+    sort_by: "domainCount"
+    sort_order: "desc"

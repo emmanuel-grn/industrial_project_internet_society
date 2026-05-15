@@ -1,0 +1,101 @@
+# ============================================================================
+# Query Configuration - Spectrum Allocation
+# Pillar: Infrastructure / Mobile Connectivity / Spectrum Allocation
+# ============================================================================
+
+queries:
+  "1.cypher":
+    description: "BGP prefix breakdown by address family — IP address space utilization with IPv4/IPv6 split"
+    
+    template: |
+      Title: IP Address Space Utilization in {{ params.countryCode | upper }}
+      
+      This analysis measures the total BGP prefix footprint of the country's network operators, broken down by address family (IPv4 vs IPv6). In the IYP graph, this serves as the best available proxy for network capacity and address space allocation — a structural correlate of spectrum/address utilization maturity.
+      
+      {% if results %}
+      **Analysis Results:**
+      
+      - Country: **{{ results[0].Country }}**
+      - Total BGP prefixes originated: **{{ results[0].Originated_Prefixes }}**
+      - IPv4 prefixes: **{{ results[0].IPv4_Prefixes }}**
+      - IPv6 prefixes: **{{ results[0].IPv6_Prefixes }}**
+      - Active operators: **{{ results[0].ActiveOperators }}**
+      - IPv6 share of prefix table: **{{ results[0].IPv6_SharePercent }}%**
+      
+      **Interpretation:**
+      
+      A higher total prefix count indicates greater IP address space allocation and more granular network segmentation. An increasing IPv6 share reflects modernization of the address space — operators planning for long-term scalability beyond IPv4 exhaustion.
+      
+      {% else %}
+      No BGP prefix data available for this country.
+      {% endif %}
+    
+    fields:
+      Country:
+        type: "string"
+        label: "Country Name"
+      Originated_Prefixes:
+        type: "integer"
+        label: "Total BGP Prefixes Originated"
+      IPv4_Prefixes:
+        type: "integer"
+        label: "IPv4 Prefixes"
+      IPv6_Prefixes:
+        type: "integer"
+        label: "IPv6 Prefixes"
+      ActiveOperators:
+        type: "integer"
+        label: "Active Operators"
+      IPv6_SharePercent:
+        type: "float"
+        label: "IPv6 Share (%)"
+        format: "float_2"
+    
+    sort_by: "Originated_Prefixes"
+    sort_order: "desc"
+
+  "2.cypher":
+    description: "Top ASes by total prefix count — largest IP address space holders"
+    
+    template: |
+      Title: Largest IP Address Space Holders in {{ params.countryCode | upper }}
+      
+      This analysis identifies the top 10 network operators in the country by number of BGP prefixes announced, broken down by IPv4 and IPv6. Operators with the largest prefix counts hold the most IP address space, indicating their capacity as significant network infrastructure providers.
+      
+      {% if results %}
+      **Top Operators by Address Space:**
+      
+      | ASN | Operator Name | Total Prefixes | IPv4 | IPv6 |
+      |-----|---------------|----------------|------|------|
+      {% for row in results %}
+      | AS{{ row.ASN }} | {{ row.operatorName or "(unnamed)" }} | {{ row.totalPrefixes }} | {{ row.ipv4Prefixes }} | {{ row.ipv6Prefixes }} |
+      {% endfor %}
+      
+      **Interpretation:**
+      
+      Operators with large address space allocations are the backbone of the country's internet capacity. The IPv6 column reveals which large operators have modernized their address space — those with zero IPv6 prefixes are critical targets for IPv6 adoption programs.
+      
+      {% else %}
+      No address space data available for this country.
+      {% endif %}
+    
+    fields:
+      ASN:
+        type: "integer"
+        label: "ASN"
+      operatorName:
+        type: "string"
+        label: "Operator Name"
+      totalPrefixes:
+        type: "integer"
+        label: "Total Prefixes"
+      ipv4Prefixes:
+        type: "integer"
+        label: "IPv4 Prefixes"
+      ipv6Prefixes:
+        type: "integer"
+        label: "IPv6 Prefixes"
+    
+    sort_by: "totalPrefixes"
+    sort_order: "desc"
+    limit: 10

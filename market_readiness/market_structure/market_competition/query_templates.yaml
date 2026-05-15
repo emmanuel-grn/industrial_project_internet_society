@@ -1,0 +1,88 @@
+# ============================================================================
+# Query Configuration - Market Competition
+# Pillar: Market Readiness / Market Structure / Market Competition
+# ============================================================================
+
+queries:
+  "1.cypher":
+    description: "Market share distribution — AS population coverage percentages"
+    
+    template: |
+      Title: Internet Market Share Distribution in {{ params.countryCode | upper }}
+      
+      This analysis maps the market share of each Autonomous System (internet operator) in the country, measured by the percentage of the population they serve. This directly reflects the competitive landscape of the country's internet access market.
+      
+      {% if results %}
+      **Market Share by Operator (Top 30):**
+      
+      | ASN | Operator Name | Market Share (%) |
+      |-----|---------------|------------------|
+      {% for row in results %}
+      | AS{{ row.asn }} | {{ row.asName or "(unnamed)" }} | {{ "%.2f"|format(row.marketSharePercent) }} |
+      {% endfor %}
+      
+      **Interpretation:**
+      
+      A market where the top operator holds more than 50% indicates a dominant-player market with limited competition. A healthy market has multiple operators each below 30% market share.
+      
+      {% else %}
+      No market share data available for this country.
+      {% endif %}
+    
+    fields:
+      asn:
+        type: "integer"
+        label: "ASN"
+      asName:
+        type: "string"
+        label: "Operator Name"
+      marketSharePercent:
+        type: "float"
+        label: "Market Share (%)"
+        format: "float_2"
+    
+    sort_by: "marketSharePercent"
+    sort_order: "desc"
+    limit: 30
+
+  "2.cypher":
+    description: "Herfindahl-Hirschman Index (HHI) — internet market concentration measure"
+    
+    template: |
+      Title: Internet Market Concentration (HHI) in {{ params.countryCode | upper }}
+      
+      This analysis calculates the Herfindahl-Hirschman Index (HHI) — the standard economic measure of market concentration used by competition regulators worldwide. The HHI is the sum of the squares of each operator's market share. A higher HHI indicates a more concentrated, less competitive market.
+      
+      {% if results %}
+      **Market Concentration Results:**
+      
+      - Total operators in market: **{{ results[0].totalAS }}**
+      - HHI Score: **{{ "%.0f"|format(results[0].hhi) }}**
+      - Market Assessment: **{{ results[0].marketConcentration }}**
+      
+      **HHI Reference Scale:**
+      
+      | HHI Range | Assessment |
+      |-----------|------------|
+      | < 1,500 | Competitive Market |
+      | 1,500 to 2,500 | Moderately Concentrated Market |
+      | > 2,500 | Highly Concentrated Market |
+      
+      {% else %}
+      No market concentration data available for this country.
+      {% endif %}
+    
+    fields:
+      hhi:
+        type: "float"
+        label: "HHI Score"
+        format: "float_0"
+      totalAS:
+        type: "integer"
+        label: "Total Operators"
+      marketConcentration:
+        type: "string"
+        label: "Market Concentration Assessment"
+    
+    sort_by: "hhi"
+    sort_order: "desc"
